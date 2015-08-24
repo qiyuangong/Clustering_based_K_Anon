@@ -12,6 +12,7 @@ from utils.read_informs_data import read_tree as read_informs_tree
 import sys
 import copy
 import pdb
+import random
 
 DATA_SELECT = 'a'
 

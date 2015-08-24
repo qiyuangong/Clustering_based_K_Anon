@@ -120,7 +120,7 @@ def read_data(flag=0):
             if IS_CAT[j] is False:
                 try:
                     numeric_dict[j][row[index]] += 1
-                except:
+                except KeyError:
                     numeric_dict[j][row[index]] = 1
     conditiondata = {}
     for i, line in enumerate(conditionfile):

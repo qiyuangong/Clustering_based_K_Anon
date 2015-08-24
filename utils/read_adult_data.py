@@ -132,7 +132,7 @@ def read_tree_file(treename):
             # try and except is more efficient than 'in'
             try:
                 att_tree[t]
-            except:
+            except KeyError:
                 att_tree[t] = GenTree(t, att_tree[temp[i - 1]], isleaf)
     if __DEBUG:
         print "Nodes No. = %d" % att_tree['*'].support

@@ -228,6 +228,7 @@ def cluster_based_k_anon(att_trees, data, type_alg='knn', k=10, QI_num=-1):
         rncp = NCP(mid)
         ncp += 1.0 * rncp * len(cluster)
     ncp /= LEN_DATA
+    ncp /= QI_LEN
     ncp *= 100
     print "NCP=", ncp
     return (result, (ncp, rtime))
