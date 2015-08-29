@@ -59,7 +59,7 @@ def NCP(mid):
     ncp = 0.0
     # exclude SA values(last one type [])
     for i in range(QI_LEN):
-        # if support of numerator is 1, then NCP is 0
+        # if leaf_num of numerator is 1, then NCP is 0
         width = 0.0
         if IS_CAT[i] is False:
             try:
@@ -68,7 +68,7 @@ def NCP(mid):
                 temp = mid[i].split(',')
                 width = float(temp[1]) - float(temp[0])
         else:
-            width = ATT_TREES[i][mid[i]].support * 1.0
+            width = len(ATT_TREES[i][mid[i]]) * 1.0
         width /= QI_RANGE[i]
         ncp += width
     return ncp
@@ -200,7 +200,7 @@ def init(att_trees, data, QI_num=-1):
             QI_RANGE.append(ATT_TREES[i].range)
         else:
             IS_CAT.append(True)
-            QI_RANGE.append(ATT_TREES[i]['*'].support)
+            QI_RANGE.append(len(ATT_TREES[i]['*']))
 
 
 def cluster_based_k_anon(att_trees, data, type_alg='knn', k=10, QI_num=-1):
@@ -230,5 +230,6 @@ def cluster_based_k_anon(att_trees, data, type_alg='knn', k=10, QI_num=-1):
     ncp /= LEN_DATA
     ncp /= QI_LEN
     ncp *= 100
-    print "NCP=", ncp
+    if __DEBUG:
+        print "NCP=", ncp
     return (result, (ncp, rtime))

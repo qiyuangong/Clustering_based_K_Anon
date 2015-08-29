@@ -13,8 +13,10 @@ import sys
 import copy
 import pdb
 import random
+import cProfile
 
 DATA_SELECT = 'a'
+TYPE_ALG = 'knn'
 
 
 def get_result_one(att_trees, data, type_alg, k=10):
@@ -110,6 +112,7 @@ if __name__ == '__main__':
         print "Adult data"
         DATA = read_adult()
         ATT_TREES = read_adult_tree()
+    DATA = DATA[:2000]
     if FLAG == 'k':
         get_result_k(ATT_TREES, DATA, TYPE_ALG)
     elif FLAG == 'qi':
@@ -117,6 +120,7 @@ if __name__ == '__main__':
     elif FLAG == 'data':
         get_result_dataset(ATT_TREES, DATA, TYPE_ALG)
     elif FLAG == '':
+        # cProfile.run('get_result_one(ATT_TREES, DATA, TYPE_ALG)')
         get_result_one(ATT_TREES, DATA, TYPE_ALG)
     else:
         try:
