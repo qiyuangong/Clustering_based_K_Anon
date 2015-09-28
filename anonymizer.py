@@ -1,10 +1,10 @@
 """
-run cluster_based_k_anon with given parameters
+run clustering_based_k_anon with given parameters
 """
 
 # !/usr/bin/env python
 # coding=utf-8
-from cluster_based_k_anon import cluster_based_k_anon
+from clustering_based_k_anon import clustering_based_k_anon
 from utils.read_adult_data import read_data as read_adult
 from utils.read_adult_data import read_tree as read_adult_tree
 from utils.read_informs_data import read_data as read_informs
@@ -17,15 +17,16 @@ import cProfile
 
 DATA_SELECT = 'a'
 TYPE_ALG = 'knn'
+DEFAULT_K = 10
 
 
-def get_result_one(att_trees, data, type_alg, k=10):
+def get_result_one(att_trees, data, type_alg, k=DEFAULT_K):
     """
-    run cluster_based_k_anon for one time, with k=10
+    run clustering_based_k_anon for one time, with k=10
     """
     print "K=%d" % k
     data_back = copy.deepcopy(data)
-    _, eval_result = cluster_based_k_anon(att_trees, data, type_alg, k)
+    _, eval_result = clustering_based_k_anon(att_trees, data, type_alg, k)
     data = copy.deepcopy(data_back)
     print "NCP %0.2f" % eval_result[0] + "%"
     print "Running time %0.2f" % eval_result[1] + " seconds"
@@ -39,13 +40,13 @@ def get_result_k(att_trees, data, type_alg):
     for k in range(5, 55, 5):
         print '#' * 30
         print "K=%d" % k
-        result, eval_result = cluster_based_k_anon(att_trees, data, type_alg, k)
+        result, eval_result = clustering_based_k_anon(att_trees, data, type_alg, k)
         data = copy.deepcopy(data_back)
         print "NCP %0.2f" % eval_result[0] + "%"
         print "Running time %0.2f" % eval_result[1] + " seconds"
 
 
-def get_result_dataset(att_trees, data, type_alg, k=10, num_test=10):
+def get_result_dataset(att_trees, data, type_alg, k=DEFAULT_K, num_test=10):
     """
     fix k and QI, while changing size of dataset
     num_test is the test nubmber.
@@ -66,7 +67,7 @@ def get_result_dataset(att_trees, data, type_alg, k=10, num_test=10):
         print "size of dataset %d" % pos
         for j in range(num_test):
             temp = random.sample(data, pos)
-            _, eval_result = cluster_based_k_anon(att_trees, temp, type_alg, k)
+            _, eval_result = clustering_based_k_anon(att_trees, temp, type_alg, k)
             ncp += eval_result[0]
             rtime += eval_result[1]
             data = copy.deepcopy(data_back)
@@ -77,7 +78,7 @@ def get_result_dataset(att_trees, data, type_alg, k=10, num_test=10):
         print '#' * 30
 
 
-def get_result_qi(att_trees, data, type_alg, k=5):
+def get_result_qi(att_trees, data, type_alg, k=DEFAULT_K):
     """
     change nubmber of QI, whle fixing k and size of dataset
     """
@@ -87,7 +88,7 @@ def get_result_qi(att_trees, data, type_alg, k=5):
     for i in reversed(range(1, num_data)):
         print '#' * 30
         print "Number of QI=%d" % i
-        _, eval_result = cluster_based_k_anon(att_trees, data, type_alg, k, i)
+        _, eval_result = clustering_based_k_anon(att_trees, data, type_alg, k, i)
         data = copy.deepcopy(data_back)
         print "NCP %0.2f" % eval_result[0] + "%"
         print "Running time %0.2f" % eval_result[1] + " seconds"
@@ -112,7 +113,7 @@ if __name__ == '__main__':
         print "Adult data"
         DATA = read_adult()
         ATT_TREES = read_adult_tree()
-    DATA = DATA[:2000]
+    # DATA = DATA[:2000]
     if FLAG == 'k':
         get_result_k(ATT_TREES, DATA, TYPE_ALG)
     elif FLAG == 'qi':
@@ -127,7 +128,7 @@ if __name__ == '__main__':
             INPUT_K = int(FLAG)
             get_result_one(ATT_TREES, DATA, TYPE_ALG, INPUT_K)
         except ValueError:
-            print "Usage: python anonymizer [knn | kmeber] [a | i] [k | qi | data]"
+            print "Usage: python anonymizer [knn | kmember] [a | i] [k | qi | data]"
             print "a: adult dataset, i: INFORMS ataset"
             print "k: varying k"
             print "qi: varying qi numbers"

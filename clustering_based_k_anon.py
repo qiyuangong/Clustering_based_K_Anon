@@ -52,6 +52,18 @@ def r_distance(source, target):
     return distance
 
 
+def diff_distance(record, cluster):
+    """
+    Return distance between record
+    and cluster. The distance is based on increasement of
+    NCP (Normalized Certainty Penalty) on relational part.
+    """
+    mid = cluster.middle
+    len_cluster = len(cluster)
+    mid_after = middle(record, mid)
+    return NCP(mid_after) * (len_cluster + 1) - NCP(mid) * len_cluster
+
+
 def NCP(mid):
     """Compute NCP (Normalized Certainty Penalty)
     when generate record to middle.
@@ -147,7 +159,7 @@ def find_best_knn(index, k, data):
     return cluster, record_index
 
 
-def find_best_cluster(record, clusters):
+def find_best_cluster_knn(record, clusters):
     """residual assignment. Find best cluster for record."""
     min_distance = 1000000000000
     min_index = 0
@@ -162,7 +174,7 @@ def find_best_cluster(record, clusters):
     return min_index
 
 
-def cluster_knn(data, k=25):
+def clustering_knn(data, k=25):
     """
     Group record according to QID distance. KNN
     """
@@ -176,7 +188,74 @@ def cluster_knn(data, k=25):
     # residual assignment
     while len(data) > 0:
         t = data.pop()
-        cluster_index = find_best_cluster(t, clusters)
+        cluster_index = find_best_cluster_knn(t, clusters)
+        clusters[cluster_index].add_record(t)
+    return clusters
+
+
+def find_best_cluster_kmember(record, clusters):
+    """residual assignment. Find best cluster for record."""
+    min_distance = 1000000000000
+    min_index = 0
+    best_cluster = clusters[0]
+    for i, t in enumerate(clusters):
+        distance = diff_distance(record, t)
+        if distance < min_distance:
+            min_distance = distance
+            min_index = i
+            best_cluster = t
+    # add record to best cluster
+    return min_index
+
+
+def find_best_record(cluster, data):
+    """
+    find the best record in data for cluster
+    """
+    min_distance = 1000000000000
+    min_index = 0
+    for i, record in enumerate(data):
+        distance = diff_distance(record, cluster)
+        if distance < min_distance:
+            min_distance = distance
+            min_index = i
+    return min_index
+
+
+def find_furthest_r(r_pos, data):
+    """key fuction of KNN. Find k nearest neighbors of record,
+    remove them from data"""
+    r = data[r_pos]
+    max_distance = -1
+    max_index = 0
+    for i, record in enumerate(data):
+        distance = r_distance(r, record)
+        if distance > max_distance:
+            max_distance = distance
+            max_index = i
+    return max_index
+
+
+def clustering_kmember(data, k=25):
+    """
+    Group record according to NCP. K-member
+    """
+    clusters = []
+    # randomly choose seed and find k-1 nearest records to form cluster with size k
+    r_pos = random.randrange(len(data))
+    while len(data) >= k:
+        r_pos = find_furthest_r(r_pos, data)
+        record = data.pop(r_pos)
+        cluster = Cluster(record, record)
+        while len(cluster) < k:
+            r_pos = find_best_record(cluster, data)
+            record = data.pop(r_pos)
+            cluster.add_record(record)
+        clusters.append(cluster)
+    # residual assignment
+    while len(data) > 0:
+        t = data.pop()
+        cluster_index = find_best_cluster_knn(t, clusters)
         clusters[cluster_index].add_record(t)
     return clusters
 
@@ -203,20 +282,23 @@ def init(att_trees, data, QI_num=-1):
             QI_RANGE.append(len(ATT_TREES[i]['*']))
 
 
-def cluster_based_k_anon(att_trees, data, type_alg='knn', k=10, QI_num=-1):
+def clustering_based_k_anon(att_trees, data, type_alg='knn', k=10, QI_num=-1):
     """
-    the main function of Relational_Transaction_Anon
+    the main function of clustering based k-anon
     """
     init(att_trees, data, QI_num)
     result = []
     start_time = time.time()
     if type_alg == 'knn':
         print "Begin to KNN Cluster based on NCP"
-        clusters = cluster_knn(data, k)
+        clusters = clustering_knn(data, k)
+    elif type_alg == 'kmember':
+        print "Begin to K-Member Cluster based on NCP"
+        clusters = clustering_kmember(data, k)
     else:
         print "Please choose merge algorithm types"
         print "knn | kmember"
-        return
+        return (0, (0, 0))
     rtime = float(time.time() - start_time)
     ncp = 0.0
     for cluster in clusters:
