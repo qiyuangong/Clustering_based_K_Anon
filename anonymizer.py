@@ -53,16 +53,19 @@ def get_result_dataset(att_trees, data, type_alg, k=DEFAULT_K, num_test=10):
     """
     data_back = copy.deepcopy(data)
     length = len(data_back)
-    joint = 5000
-    dataset_num = length / joint
     print "K=%d" % k
+    joint = 5000
+    datasets = []
+    check_time = length / joint
     if length % joint == 0:
-        dataset_num += 1
-    for i in range(1, dataset_num + 1):
-        pos = i * joint
+        check_time -= 1
+    for i in range(check_time):
+        datasets.append(joint * (i + 1))
+    datasets.append(length)
+    all_ncp = []
+    all_rtime = []
+    for pos in datasets:
         ncp = rtime = 0
-        if pos > length:
-            continue
         print '#' * 30
         print "size of dataset %d" % pos
         for j in range(num_test):
@@ -121,8 +124,8 @@ if __name__ == '__main__':
     elif FLAG == 'data':
         get_result_dataset(ATT_TREES, DATA, TYPE_ALG)
     elif FLAG == '':
-        # cProfile.run('get_result_one(ATT_TREES, DATA, TYPE_ALG)')
-        get_result_one(ATT_TREES, DATA, TYPE_ALG)
+        cProfile.run('get_result_one(ATT_TREES, DATA, TYPE_ALG)')
+        # get_result_one(ATT_TREES, DATA, TYPE_ALG)
     else:
         try:
             INPUT_K = int(FLAG)
