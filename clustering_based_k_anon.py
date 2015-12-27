@@ -4,7 +4,6 @@ main module for cluster_based_k_anon
 #!/usr/bin/env python
 #coding=utf-8
 
-from models.cluster import Cluster
 from models.numrange import NumRange
 from models.gentree import GenTree
 from utils.utility import get_num_list_from_str, cmp_str
@@ -22,6 +21,48 @@ LEN_DATA = 0
 QI_LEN = 0
 QI_RANGE = []
 IS_CAT = []
+
+
+class Cluster(object):
+
+    """Cluster is for cluster based k-anonymity
+    middle denote generlized value for one cluster
+    self.member: record list in cluster
+    self.middle: middle node in cluster
+    """
+
+    def __init__(self, member, middle):
+        self.iloss = 0.0
+        self.member = member
+        self.middle = middle[:]
+
+    def add_record(self, record):
+        """
+        add record to cluster
+        """
+        self.member.append(record)
+        self.middle = middle(self.middle, record)
+
+    def merge_group(self, group, middle):
+        """merge group into self_gourp and delete group elements.
+        update self.middle with middle
+        """
+        while group.member:
+            temp = group.member.pop()
+            self.member.append(temp)
+        self.middle = middle[:]
+
+    def merge_record(self, record, middle):
+        """merge record into hostgourp. update self.middle with middle
+        """
+        self.member.append(record)
+        self.middle = middle[:]
+
+    def __len__(self):
+        """
+        return number of records in cluster
+        """
+        return len(self.member)
 
 
 def r_distance(source, target):
@@ -195,45 +236,50 @@ def clustering_knn(data, k=25):
 
 def find_best_cluster_kmember(record, clusters):
     """residual assignment. Find best cluster for record."""
-    min_distance = 1000000000000
+    min_diff = 1000000000000
     min_index = 0
     best_cluster = clusters[0]
     for i, t in enumerate(clusters):
-        distance = diff_distance(record, t)
-        if distance < min_distance:
-            min_distance = distance
+        IF_diff = diff_distance(record, t)
+        if IF_diff < min_diff:
+            min_distance = IF_diff
             min_index = i
             best_cluster = t
     # add record to best cluster
     return min_index
 
 
+def find_furthest_record(record, data):
+    """
+    :param record: the latest record be added to cluster
+    :param data: remain records in data
+    :return: the index of the furthest record from r_index
+    """
+    max_distance = 0
+    max_index = -1
+    for index in range(len(data)):
+        current_distance = r_distance(record, data[index])
+        if current_distance >= max_distance:
+            max_distance = current_distance
+            max_index = index
+    return max_index
+
+
 def find_best_record(cluster, data):
     """
-    find the best record in data for cluster
+    :param cluster: current
+    :param data: remain dataset
+    :return: index of record with min diff on information loss
     """
-    min_distance = 1000000000000
+    # pdb.set_trace()
+    min_diff = 1000000000000
     min_index = 0
-    for i, record in enumerate(data):
-        distance = diff_distance(record, cluster)
-        if distance < min_distance:
-            min_distance = distance
-            min_index = i
+    for index, record in enumerate(data):
+        IF_diff = diff_distance(record, cluster)
+        if IF_diff < min_diff:
+            min_diff = IF_diff
+            min_index = index
     return min_index
-
-
-def find_furthest_r(r_pos, data):
-    """key fuction of KNN. Find k nearest neighbors of record,
-    remove them from data"""
-    r = data[r_pos]
-    max_distance = -1
-    max_index = 0
-    for i, record in enumerate(data):
-        distance = r_distance(r, record)
-        if distance > max_distance:
-            max_distance = distance
-            max_index = i
-    return max_index
 
 
 def clustering_kmember(data, k=25):
@@ -243,19 +289,21 @@ def clustering_kmember(data, k=25):
     clusters = []
     # randomly choose seed and find k-1 nearest records to form cluster with size k
     r_pos = random.randrange(len(data))
+    record = data[r_pos]
     while len(data) >= k:
-        r_pos = find_furthest_r(r_pos, data)
+        r_pos = find_furthest_record(record, data)
         record = data.pop(r_pos)
-        cluster = Cluster(record, record)
+        cluster = Cluster([record], record)
         while len(cluster) < k:
             r_pos = find_best_record(cluster, data)
             record = data.pop(r_pos)
             cluster.add_record(record)
         clusters.append(cluster)
+        # pdb.set_trace()
     # residual assignment
     while len(data) > 0:
         t = data.pop()
-        cluster_index = find_best_cluster_knn(t, clusters)
+        cluster_index = find_best_cluster_kmember(t, clusters)
         clusters[cluster_index].add_record(t)
     return clusters
 
