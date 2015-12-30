@@ -6,7 +6,7 @@ main module for cluster_based_k_anon
 
 from models.numrange import NumRange
 from models.gentree import GenTree
-from utils.utility import get_num_list_from_str, cmp_str
+from utils.utility import get_num_list_from_str, cmp_str, list_to_str
 import random
 import time
 import operator
@@ -21,6 +21,10 @@ LEN_DATA = 0
 QI_LEN = 0
 QI_RANGE = []
 IS_CAT = []
+# get_LCA, middle and NCP require huge running time, while most of the function are duplicate
+# we can use cache to reduce the running time
+LCA_CACHE = []
+NCP_CACHE = {}
 
 
 class Cluster(object):
@@ -42,6 +46,7 @@ class Cluster(object):
         """
         self.member.append(record)
         self.middle = middle(self.middle, record)
+        self.iloss = NCP(self.middle)
 
     def merge_group(self, group, middle):
         """merge group into self_gourp and delete group elements.
@@ -52,11 +57,12 @@ class Cluster(object):
             self.member.append(temp)
         self.middle = middle[:]
 
-    def merge_record(self, record, middle):
-        """merge record into hostgourp. update self.middle with middle
+    def __getitem__(self, item):
         """
-        self.member.append(record)
-        self.middle = middle[:]
+        :param item: index number
+        :return: middle[item]
+        """
+        return self.middle[item]
 
     def __len__(self):
         """
@@ -102,7 +108,7 @@ def diff_distance(record, cluster):
     mid = cluster.middle
     len_cluster = len(cluster)
     mid_after = middle(record, mid)
-    return NCP(mid_after) * (len_cluster + 1) - NCP(mid) * len_cluster
+    return NCP(mid_after) * (len_cluster + 1) - cluster.iloss
 
 
 def NCP(mid):
@@ -111,6 +117,11 @@ def NCP(mid):
     """
     ncp = 0.0
     # exclude SA values(last one type [])
+    list_key = list_to_str(mid)
+    try:
+        return NCP_CACHE[list_key]
+    except KeyError:
+        pass
     for i in range(QI_LEN):
         # if leaf_num of numerator is 1, then NCP is 0
         width = 0.0
@@ -124,6 +135,7 @@ def NCP(mid):
             width = len(ATT_TREES[i][mid[i]]) * 1.0
         width /= QI_RANGE[i]
         ncp += width
+    NCP_CACHE[list_key] = ncp
     return ncp
 
 
@@ -132,18 +144,23 @@ def get_LCA(index, item1, item2):
     # get parent list from
     if item1 == item2:
         return item1
+    try:
+        return LCA_CACHE[index][item1+item2]
+    except KeyError:
+        pass
     parent1 = ATT_TREES[index][item1].parent[:]
     parent2 = ATT_TREES[index][item2].parent[:]
     parent1.insert(0, ATT_TREES[index][item1])
     parent2.insert(0, ATT_TREES[index][item2])
-    minlen = min(len(parent1), len(parent2))
+    min_len = min(len(parent1), len(parent2))
     last_LCA = parent1[-1]
     # note here: when trying to access list reversely, take care of -0
-    for i in range(1, minlen + 1):
+    for i in range(1, min_len + 1):
         if parent1[-i].value == parent2[-i].value:
             last_LCA = parent1[-i]
         else:
             break
+    LCA_CACHE[index][item1+item2] = last_LCA.value
     return last_LCA.value
 
 
@@ -157,10 +174,11 @@ def middle(record1, record2):
             split_number = []
             split_number.extend(get_num_list_from_str(record1[i]))
             split_number.extend(get_num_list_from_str(record2[i]))
-            split_number.sort(cmp=cmp_str)
-            if split_number[0] == split_number[-1]:
+            split_number = list(set(split_number))
+            if len(split_number) == 1:
                 mid.append(split_number[0])
             else:
+                split_number.sort(cmp=cmp_str)
                 mid.append(split_number[0] + ',' + split_number[-1])
         else:
             mid.append(get_LCA(i, record1[i], record2[i]))
@@ -289,15 +307,15 @@ def clustering_kmember(data, k=25):
     clusters = []
     # randomly choose seed and find k-1 nearest records to form cluster with size k
     r_pos = random.randrange(len(data))
-    record = data[r_pos]
+    r_i = data[r_pos]
     while len(data) >= k:
-        r_pos = find_furthest_record(record, data)
-        record = data.pop(r_pos)
-        cluster = Cluster([record], record)
+        r_pos = find_furthest_record(r_i, data)
+        r_i = data.pop(r_pos)
+        cluster = Cluster([r_i], r_i)
         while len(cluster) < k:
             r_pos = find_best_record(cluster, data)
-            record = data.pop(r_pos)
-            cluster.add_record(record)
+            r_j = data.pop(r_pos)
+            cluster.add_record(r_j)
         clusters.append(cluster)
         # pdb.set_trace()
     # residual assignment
@@ -312,16 +330,19 @@ def init(att_trees, data, QI_num=-1):
     """
     init global variables
     """
-    global ATT_TREES, DATA_BACKUP, LEN_DATA, QI_RANGE, IS_CAT, QI_LEN
+    global ATT_TREES, DATA_BACKUP, LEN_DATA, QI_RANGE, IS_CAT, QI_LEN, LCA_CACHE, NCP_CACHE
     ATT_TREES = att_trees
     QI_RANGE = []
     IS_CAT = []
     LEN_DATA = len(data)
+    LCA_CACHE = []
+    NCP_CACHE = {}
     if QI_num <= 0:
         QI_LEN = len(data[0]) - 1
     else:
         QI_LEN = QI_num
     for i in range(QI_LEN):
+        LCA_CACHE.append(dict())
         if isinstance(ATT_TREES[i], NumRange):
             IS_CAT.append(False)
             QI_RANGE.append(ATT_TREES[i].range)

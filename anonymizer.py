@@ -16,8 +16,8 @@ import random
 import cProfile
 
 DATA_SELECT = 'a'
-TYPE_ALG = 'knn'
-DEFAULT_K = 10
+TYPE_ALG = 'kmember'
+DEFAULT_K = 5
 
 
 def get_result_one(att_trees, data, type_alg, k=DEFAULT_K):
@@ -88,7 +88,7 @@ def get_result_qi(att_trees, data, type_alg, k=DEFAULT_K):
     data_back = copy.deepcopy(data)
     num_data = len(data[0])
     print "L=%d" % k
-    for i in reversed(range(1, num_data)):
+    for i in range(1, num_data):
         print '#' * 30
         print "Number of QI=%d" % i
         _, eval_result = clustering_based_k_anon(att_trees, data, type_alg, k, i)
@@ -116,7 +116,7 @@ if __name__ == '__main__':
         print "Adult data"
         DATA = read_adult()
         ATT_TREES = read_adult_tree()
-    # DATA = DATA[:2000]
+    DATA = DATA[:3000]
     if FLAG == 'k':
         get_result_k(ATT_TREES, DATA, TYPE_ALG)
     elif FLAG == 'qi':
@@ -136,7 +136,7 @@ if __name__ == '__main__':
             print "k: varying k"
             print "qi: varying qi numbers"
             print "data: varying size of dataset"
-            print "example: python anonymizer a 5"
-            print "example: python anonymizer a k"
+            print "example: python anonymizer knn a 5"
+            print "example: python anonymizer kmember a k"
     # anonymized dataset is stored in result
     print "Finish Cluster based K-Anon!!"

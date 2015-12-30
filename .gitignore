@@ -2,7 +2,7 @@
 .DS_Store
 output/*
 *.pickle
-
+.idea
 # C extensions
 *.so
 ftp
