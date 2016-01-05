@@ -36,7 +36,7 @@ class Cluster(object):
     """
 
     def __init__(self, member, middle):
-        self.iloss = 0.0
+        self.information_loss = 0.0
         self.member = member
         self.middle = middle[:]
 
@@ -46,7 +46,7 @@ class Cluster(object):
         """
         self.member.append(record)
         self.middle = middle(self.middle, record)
-        self.iloss = NCP(self.middle)
+        self.information_loss = len(self.member) * NCP(self.middle)
 
     def merge_group(self, group, middle):
         """merge group into self_gourp and delete group elements.
@@ -101,14 +101,10 @@ def r_distance(source, target):
 
 def diff_distance(record, cluster):
     """
-    Return distance between record
-    and cluster. The distance is based on increasement of
-    NCP (Normalized Certainty Penalty) on relational part.
+    Return IL(cluster and record) - IL(cluster).
     """
-    mid = cluster.middle
-    len_cluster = len(cluster)
-    mid_after = middle(record, mid)
-    return NCP(mid_after) * (len_cluster + 1) - cluster.iloss
+    mid_after = middle(record, cluster.middle)
+    return NCP(mid_after) * (len(cluster) + 1) - cluster.iloss
 
 
 def NCP(mid):
@@ -293,7 +289,10 @@ def find_best_record(cluster, data):
     min_diff = 1000000000000
     min_index = 0
     for index, record in enumerate(data):
-        IF_diff = diff_distance(record, cluster)
+        # IF_diff = diff_distance(record, cluster)
+        # IL(cluster and record) and |cluster| + 1 is a constant
+        # so IL(record, cluster.middle) is enough
+        IF_diff = NCP(middle(record, cluster.middle))
         if IF_diff < min_diff:
             min_diff = IF_diff
             min_index = index
