@@ -25,10 +25,9 @@ ATT_NAMES = ['age', 'workclass', 'final_weight', 'education',
 # age and education levels are treated as numeric attributes
 # only matrial_status and workclass has well defined generalization hierarchies.
 # other categorical attributes only have 2-level generalization hierarchies.
-QI_INDEX = [0, 1, 4, 5, 8, 9, 13]
-IS_CAT = [False, True, False, True, True, True, True]
-# OCC as SA, do not use class wiht only has two values
-SA_INDEX = 6
+QI_INDEX = [0, 1, 4, 5, 6, 8, 9, 13]
+IS_CAT = [False, True, False, True, True, True, True, True]
+SA_INDEX = -1
 
 __DEBUG = False
 

@@ -17,7 +17,8 @@ import cProfile
 
 DATA_SELECT = 'a'
 TYPE_ALG = 'kmember'
-DEFAULT_K = 5
+DEFAULT_K = 10
+__DEBUG = False
 
 
 def get_result_one(att_trees, data, type_alg, k=DEFAULT_K):
@@ -101,8 +102,8 @@ if __name__ == '__main__':
     FLAG = ''
     LEN_ARGV = len(sys.argv)
     try:
-        TYPE_ALG = sys.argv[1]
-        DATA_SELECT = sys.argv[2]
+        DATA_SELECT = sys.argv[1]
+        TYPE_ALG = sys.argv[2]
         FLAG = sys.argv[3]
     except IndexError:
         pass
@@ -116,7 +117,8 @@ if __name__ == '__main__':
         print "Adult data"
         DATA = read_adult()
         ATT_TREES = read_adult_tree()
-    DATA = DATA[:3000]
+    if __DEBUG:
+        DATA = DATA[:2000]
     if FLAG == 'k':
         get_result_k(ATT_TREES, DATA, TYPE_ALG)
     elif FLAG == 'qi':
@@ -124,19 +126,21 @@ if __name__ == '__main__':
     elif FLAG == 'data':
         get_result_dataset(ATT_TREES, DATA, TYPE_ALG)
     elif FLAG == '':
-        cProfile.run('get_result_one(ATT_TREES, DATA, TYPE_ALG)')
-        # get_result_one(ATT_TREES, DATA, TYPE_ALG)
+        if __DEBUG:
+            cProfile.run('get_result_one(ATT_TREES, DATA, TYPE_ALG)')
+        else:
+            get_result_one(ATT_TREES, DATA, TYPE_ALG)
     else:
         try:
             INPUT_K = int(FLAG)
             get_result_one(ATT_TREES, DATA, TYPE_ALG, INPUT_K)
         except ValueError:
-            print "Usage: python anonymizer [knn | kmember] [a | i] [k | qi | data]"
+            print "Usage: python anonymizer [a | i] [k | qi | data] [knn | kmember]"
             print "a: adult dataset, i: INFORMS ataset"
             print "k: varying k"
             print "qi: varying qi numbers"
             print "data: varying size of dataset"
-            print "example: python anonymizer knn a 5"
-            print "example: python anonymizer kmember a k"
+            print "example: python anonymizer a knn 5"
+            print "example: python anonymizer a kmember k"
     # anonymized dataset is stored in result
     print "Finish Cluster based K-Anon!!"

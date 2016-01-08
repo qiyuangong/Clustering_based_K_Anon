@@ -75,7 +75,7 @@ class functionTest(unittest.TestCase):
         result, eval_r = clustering_based_k_anon(ATT_TREE, data, 'knn', 2)
         # print result
         # print eval_r
-        self.assertTrue(abs(eval_r[0] -0) < 0.05)
+        self.assertTrue(abs(eval_r[0] - 0) < 0.05)
 
     def test2_k_nn(self):
         init()

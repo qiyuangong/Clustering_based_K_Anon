@@ -141,7 +141,7 @@ def get_LCA(index, item1, item2):
     if item1 == item2:
         return item1
     try:
-        return LCA_CACHE[index][item1+item2]
+        return LCA_CACHE[index][item1 + item2]
     except KeyError:
         pass
     parent1 = ATT_TREES[index][item1].parent[:]
@@ -156,7 +156,7 @@ def get_LCA(index, item1, item2):
             last_LCA = parent1[-i]
         else:
             break
-    LCA_CACHE[index][item1+item2] = last_LCA.value
+    LCA_CACHE[index][item1 + item2] = last_LCA.value
     return last_LCA.value
 
 
@@ -373,7 +373,7 @@ def clustering_based_k_anon(att_trees, data, type_alg='knn', k=10, QI_num=-1):
         gen_result = []
         mid = cluster.middle
         for i in range(len(cluster)):
-            gen_result.append(mid)
+            gen_result.append(mid + [cluster.member[i][-1]])
         result.extend(gen_result)
         rncp = NCP(mid)
         ncp += 1.0 * rncp * len(cluster)
