@@ -119,6 +119,8 @@ if __name__ == '__main__':
         ATT_TREES = read_adult_tree()
     if __DEBUG:
         DATA = DATA[:2000]
+        print "Test anonymization with %d records" % len(DATA)
+        print sys.argv
     if FLAG == 'k':
         get_result_k(ATT_TREES, DATA, TYPE_ALG)
     elif FLAG == 'qi':

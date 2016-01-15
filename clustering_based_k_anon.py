@@ -45,17 +45,29 @@ class Cluster(object):
         add record to cluster
         """
         self.member.append(record)
-        self.middle = middle(self.middle, record)
+        self.update_middle(record)
+
+    def update_middle(self, merge_middle):
+        """
+        update middle and information_loss after adding record or merging cluster
+        :param merge_middle:
+        :return:
+        """
+        self.middle = middle(self.middle, merge_middle)
         self.information_loss = len(self.member) * NCP(self.middle)
 
-    def merge_group(self, group, middle):
-        """merge group into self_gourp and delete group elements.
+    def add_same_record(self, record):
+        """
+        add record with same qid to cluster
+        """
+        self.member.append(record)
+
+    def merge_cluster(self, cluster):
+        """merge cluster into self and do not delete cluster elements.
         update self.middle with middle
         """
-        while group.member:
-            temp = group.member.pop()
-            self.member.append(temp)
-        self.middle = middle[:]
+        self.member.extend(cluster.member)
+        self.update_middle(cluster.middle)
 
     def __getitem__(self, item):
         """
@@ -375,8 +387,7 @@ def clustering_based_k_anon(att_trees, data, type_alg='knn', k=10, QI_num=-1):
         for i in range(len(cluster)):
             gen_result.append(mid + [cluster.member[i][-1]])
         result.extend(gen_result)
-        rncp = NCP(mid)
-        ncp += 1.0 * rncp * len(cluster)
+        ncp += cluster.information_loss
     ncp /= LEN_DATA
     ncp /= QI_LEN
     ncp *= 100
