@@ -35,8 +35,8 @@ class Cluster(object):
     self.middle: middle node in cluster
     """
 
-    def __init__(self, member, middle):
-        self.information_loss = 0.0
+    def __init__(self, member, middle, information_loss=0.0):
+        self.information_loss = information_loss
         self.member = member
         self.middle = middle[:]
 
@@ -116,7 +116,7 @@ def diff_distance(record, cluster):
     Return IL(cluster and record) - IL(cluster).
     """
     mid_after = middle(record, cluster.middle)
-    return NCP(mid_after) * (len(cluster) + 1) - cluster.iloss
+    return NCP(mid_after) * (len(cluster) + 1) - cluster.information_loss
 
 
 def NCP(mid):
@@ -221,7 +221,8 @@ def find_best_knn(index, k, data):
     knn.append((index, 0))
     record_index = [t[0] for t in knn]
     elements = [data[t[0]] for t in knn]
-    cluster = Cluster(elements, middle_for_cluster(elements))
+    mid = middle_for_cluster(elements)
+    cluster = Cluster(elements, mid, k * NCP(mid))
     # delete multiple elements from data according to knn index list
     return cluster, record_index
 

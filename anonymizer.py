@@ -33,6 +33,26 @@ def get_result_one(att_trees, data, type_alg, k=DEFAULT_K):
     print "Running time %0.2f" % eval_result[1] + " seconds"
 
 
+def get_result_n(att_trees, data, type_alg, k=DEFAULT_K, n=10):
+    """
+    run clustering_based_k_anon for n time, with k=10
+    """
+    print "K=%d" % k
+    data_back = copy.deepcopy(data)
+    n_ncp = 0.0
+    n_time = 0.0
+    for i in range(n):
+        _, eval_result = clustering_based_k_anon(att_trees, data, type_alg, k)
+        data = copy.deepcopy(data_back)
+        n_ncp += eval_result[0]
+        n_time += eval_result[1]
+    n_ncp = n_ncp / n
+    n_time = n_ncp / n
+    print "Run %d times" % n
+    print "NCP %0.2f" % n_ncp + "%"
+    print "Running time %0.2f" % n_time + " seconds"
+
+
 def get_result_k(att_trees, data, type_alg):
     """
     change k, whle fixing QD and size of dataset
@@ -127,6 +147,8 @@ if __name__ == '__main__':
         get_result_qi(ATT_TREES, DATA, TYPE_ALG)
     elif FLAG == 'data':
         get_result_dataset(ATT_TREES, DATA, TYPE_ALG)
+    elif FLAG == 'n':
+        get_result_n(ATT_TREES, DATA, TYPE_ALG)
     elif FLAG == '':
         if __DEBUG:
             cProfile.run('get_result_one(ATT_TREES, DATA, TYPE_ALG)')
@@ -137,8 +159,9 @@ if __name__ == '__main__':
             INPUT_K = int(FLAG)
             get_result_one(ATT_TREES, DATA, TYPE_ALG, INPUT_K)
         except ValueError:
-            print "Usage: python anonymizer [a | i] [k | qi | data] [knn | kmember]"
+            print "Usage: python anonymizer [a | i] [knn | kmember] [k | qi | data| n]"
             print "a: adult dataset, i: INFORMS ataset"
+            print "knn: k-nearest neighborhood, kmember: k-member"
             print "k: varying k"
             print "qi: varying qi numbers"
             print "data: varying size of dataset"
