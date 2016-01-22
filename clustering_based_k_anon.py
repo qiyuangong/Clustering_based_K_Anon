@@ -292,7 +292,7 @@ def find_furthest_record(record, data):
     return max_index
 
 
-def find_best_record(cluster, data):
+def find_best_record_kmember(cluster, data):
     """
     :param cluster: current
     :param data: remain dataset
@@ -305,7 +305,7 @@ def find_best_record(cluster, data):
         # IF_diff = diff_distance(record, cluster)
         # IL(cluster and record) and |cluster| + 1 is a constant
         # so IL(record, cluster.middle) is enough
-        IF_diff = NCP(middle(record, cluster.middle))
+        IF_diff = diff_distance(record, cluster)
         if IF_diff < min_diff:
             min_diff = IF_diff
             min_index = index
@@ -325,7 +325,7 @@ def clustering_kmember(data, k=25):
         r_i = data.pop(r_pos)
         cluster = Cluster([r_i], r_i)
         while len(cluster) < k:
-            r_pos = find_best_record(cluster, data)
+            r_pos = find_best_record_kmember(cluster, data)
             r_j = data.pop(r_pos)
             cluster.add_record(r_j)
         clusters.append(cluster)

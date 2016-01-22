@@ -18,7 +18,7 @@ import cProfile
 DATA_SELECT = 'a'
 TYPE_ALG = 'kmember'
 DEFAULT_K = 10
-__DEBUG = False
+__DEBUG = True
 
 
 def get_result_one(att_trees, data, type_alg, k=DEFAULT_K):
@@ -138,8 +138,8 @@ if __name__ == '__main__':
         DATA = read_adult()
         ATT_TREES = read_adult_tree()
     if __DEBUG:
-        DATA = DATA[:2000]
-        print "Test anonymization with %d records" % len(DATA)
+        # DATA = DATA[:2000]
+        # print "Test anonymization with %d records" % len(DATA)
         print sys.argv
     if FLAG == 'k':
         get_result_k(ATT_TREES, DATA, TYPE_ALG)
