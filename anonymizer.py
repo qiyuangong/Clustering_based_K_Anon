@@ -58,7 +58,8 @@ def get_result_k(att_trees, data, type_alg):
     change k, whle fixing QD and size of dataset
     """
     data_back = copy.deepcopy(data)
-    for k in range(5, 55, 5):
+    # for k in range(5, 55, 5):
+    for k in [2, 5, 10, 25, 50, 100]:
         print '#' * 30
         print "K=%d" % k
         result, eval_result = clustering_based_k_anon(att_trees, data, type_alg, k)
@@ -108,7 +109,7 @@ def get_result_qi(att_trees, data, type_alg, k=DEFAULT_K):
     """
     data_back = copy.deepcopy(data)
     num_data = len(data[0])
-    print "L=%d" % k
+    print "K=%d" % k
     for i in range(1, num_data):
         print '#' * 30
         print "Number of QI=%d" % i
@@ -159,9 +160,9 @@ if __name__ == '__main__':
             INPUT_K = int(FLAG)
             get_result_one(ATT_TREES, DATA, TYPE_ALG, INPUT_K)
         except ValueError:
-            print "Usage: python anonymizer [a | i] [knn | kmember] [k | qi | data| n]"
+            print "Usage: python anonymizer [a | i] [knn | kmember | oka] [k | qi | data| n]"
             print "a: adult dataset, i: INFORMS ataset"
-            print "knn: k-nearest neighborhood, kmember: k-member"
+            print "knn: k-nearest neighborhood, kmember: k-member, oka: one time pass k-means"
             print "k: varying k"
             print "qi: varying qi numbers"
             print "data: varying size of dataset"

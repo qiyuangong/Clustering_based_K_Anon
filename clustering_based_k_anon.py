@@ -69,6 +69,12 @@ class Cluster(object):
         self.member.extend(cluster.member)
         self.update_middle(cluster.middle)
 
+    def update_cluster(self):
+        """update cluster information when member is changed
+        """
+        self.middle = middle_for_cluster(self.member)
+        self.information_loss = len(self.member) * NCP(self.middle)
+
     def __getitem__(self, item):
         """
         :param item: index number
@@ -209,7 +215,6 @@ def find_best_knn(index, k, data):
     """key fuction of KNN. Find k nearest neighbors of record, remove them from data"""
     dist_dict = {}
     record = data[index]
-    max_distance = 1000000000000
     # add random seed to cluster
     for i, t in enumerate(data):
         if i == index:
@@ -227,7 +232,7 @@ def find_best_knn(index, k, data):
     return cluster, record_index
 
 
-def find_best_cluster_knn(record, clusters):
+def find_best_cluster_ncp(record, clusters):
     """residual assignment. Find best cluster for record."""
     min_distance = 1000000000000
     min_index = 0
@@ -240,25 +245,6 @@ def find_best_cluster_knn(record, clusters):
             best_cluster = t
     # add record to best cluster
     return min_index
-
-
-def clustering_knn(data, k=25):
-    """
-    Group record according to QID distance. KNN
-    """
-    clusters = []
-    # randomly choose seed and find k-1 nearest records to form cluster with size k
-    while len(data) >= k:
-        index = random.randrange(len(data))
-        cluster, record_index = find_best_knn(index, k, data)
-        data = [t for i, t in enumerate(data[:]) if i not in set(record_index)]
-        clusters.append(cluster)
-    # residual assignment
-    while len(data) > 0:
-        t = data.pop()
-        cluster_index = find_best_cluster_knn(t, clusters)
-        clusters[cluster_index].add_record(t)
-    return clusters
 
 
 def find_best_cluster_kmember(record, clusters):
@@ -292,7 +278,7 @@ def find_furthest_record(record, data):
     return max_index
 
 
-def find_best_record_kmember(cluster, data):
+def find_best_record_iloss_increase(cluster, data):
     """
     :param cluster: current
     :param data: remain dataset
@@ -312,6 +298,25 @@ def find_best_record_kmember(cluster, data):
     return min_index
 
 
+def clustering_knn(data, k=25):
+    """
+    Group record according to QID distance. KNN
+    """
+    clusters = []
+    # randomly choose seed and find k-1 nearest records to form cluster with size k
+    while len(data) >= k:
+        index = random.randrange(len(data))
+        cluster, record_index = find_best_knn(index, k, data)
+        data = [t for i, t in enumerate(data[:]) if i not in set(record_index)]
+        clusters.append(cluster)
+    # residual assignment
+    while len(data) > 0:
+        t = data.pop()
+        cluster_index = find_best_cluster_ncp(t, clusters)
+        clusters[cluster_index].add_record(t)
+    return clusters
+
+
 def clustering_kmember(data, k=25):
     """
     Group record according to NCP. K-member
@@ -325,7 +330,7 @@ def clustering_kmember(data, k=25):
         r_i = data.pop(r_pos)
         cluster = Cluster([r_i], r_i)
         while len(cluster) < k:
-            r_pos = find_best_record_kmember(cluster, data)
+            r_pos = find_best_record_iloss_increase(cluster, data)
             r_j = data.pop(r_pos)
             cluster.add_record(r_j)
         clusters.append(cluster)
@@ -335,6 +340,62 @@ def clustering_kmember(data, k=25):
         t = data.pop()
         cluster_index = find_best_cluster_kmember(t, clusters)
         clusters[cluster_index].add_record(t)
+    return clusters
+
+
+def adjust_cluster(cluster, residual, k):
+    mid = cluster.middle
+    dist_dict = {}
+    # add random seed to cluster
+    for i, t in enumerate(cluster.member):
+        dist = r_distance(mid, t)
+        dist_dict[i] = dist
+    sorted_dict = sorted(dist_dict.iteritems(), key=operator.itemgetter(1))
+    need_adjust_index = [t[0] for t in sorted_dict[k:]]
+    need_adjust = [cluster.member[t] for t in need_adjust_index]
+    residual.extend(need_adjust)
+    # update cluster
+    cluster.member = [t for i, t in enumerate(cluster.member)
+                      if i not in set(need_adjust_index)]
+
+    cluster.update_cluster()
+
+
+def clustering_oka(data, k=25):
+    """
+    Group record according to NCP. OKA: one time pass k-means
+    """
+    clusters = []
+    can_clusters = []
+    less_clusters = []
+    # randomly choose seed and find k-1 nearest records to form cluster with size k
+    seed_index = random.sample(range(len(data)), len(data) / k)
+    for index in seed_index:
+        record = data[index]
+        can_clusters.append(Cluster([record], record))
+    data = [t for i, t in enumerate(data[:]) if i not in set(seed_index)]
+    while len(data) > 0:
+        record = data.pop()
+        index = find_best_cluster_ncp(record, can_clusters)
+        can_clusters[index].add_record(record)
+    residual = []
+    for cluster in can_clusters:
+        if len(cluster) < k:
+            less_clusters.append(cluster)
+        else:
+            if len(cluster) > k:
+                adjust_cluster(cluster, residual, k)
+            clusters.append(cluster)
+    while len(residual) > 0:
+        record = residual.pop()
+        if len(less_clusters) > 0:
+            index = find_best_cluster_ncp(record, less_clusters)
+            less_clusters[index].add_record(record)
+            if less_clusters[index] >= k:
+                clusters.append(less_clusters.pop(index))
+        else:
+            index = find_best_cluster_ncp(record, clusters)
+            clusters[index].add_record(record)
     return clusters
 
 
@@ -376,6 +437,8 @@ def clustering_based_k_anon(att_trees, data, type_alg='knn', k=10, QI_num=-1):
     elif type_alg == 'kmember':
         print "Begin to K-Member Cluster based on NCP"
         clusters = clustering_kmember(data, k)
+    elif type_alg == 'oka':
+        clusters = clustering_oka(data, k)
     else:
         print "Please choose merge algorithm types"
         print "knn | kmember"
