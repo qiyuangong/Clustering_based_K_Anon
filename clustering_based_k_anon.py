@@ -102,6 +102,9 @@ class Cluster(object):
         """
         return len(self.member)
 
+    def __str__(self):
+        return str(self.gen_result)
+
 
 def r_distance(source, target):
     """
@@ -246,7 +249,7 @@ def find_best_knn(index, k, data):
     return cluster, record_index
 
 
-def find_best_cluster_ncp(record, clusters):
+def find_best_cluster_iloss(record, clusters):
     """residual assignment. Find best cluster for record."""
     min_distance = 1000000000000
     min_index = 0
@@ -261,7 +264,7 @@ def find_best_cluster_ncp(record, clusters):
     return min_index
 
 
-def find_best_cluster_kmember(record, clusters):
+def find_best_cluster_iloss_increase(record, clusters):
     """residual assignment. Find best cluster for record."""
     min_diff = 1000000000000
     min_index = 0
@@ -326,7 +329,7 @@ def clustering_knn(data, k=25):
     # residual assignment
     while len(data) > 0:
         t = data.pop()
-        cluster_index = find_best_cluster_ncp(t, clusters)
+        cluster_index = find_best_cluster_iloss(t, clusters)
         clusters[cluster_index].add_record(t)
     return clusters
 
@@ -352,7 +355,7 @@ def clustering_kmember(data, k=25):
     # residual assignment
     while len(data) > 0:
         t = data.pop()
-        cluster_index = find_best_cluster_kmember(t, clusters)
+        cluster_index = find_best_cluster_iloss_increase(t, clusters)
         clusters[cluster_index].add_record(t)
     return clusters
 
@@ -387,10 +390,12 @@ def clustering_oka(data, k=25):
         record = data[index]
         can_clusters.append(Cluster([record], record))
     data = [t for i, t in enumerate(data[:]) if i not in set(seed_index)]
+    # pdb.set_trace()
     while len(data) > 0:
         record = data.pop()
-        index = find_best_cluster_ncp(record, can_clusters)
+        index = find_best_cluster_iloss(record, can_clusters)
         can_clusters[index].add_record(record)
+    # pdb.set_trace()
     residual = []
     for cluster in can_clusters:
         if len(cluster) < k:
@@ -402,12 +407,12 @@ def clustering_oka(data, k=25):
     while len(residual) > 0:
         record = residual.pop()
         if len(less_clusters) > 0:
-            index = find_best_cluster_ncp(record, less_clusters)
+            index = find_best_cluster_iloss(record, less_clusters)
             less_clusters[index].add_record(record)
             if less_clusters[index] >= k:
                 clusters.append(less_clusters.pop(index))
         else:
-            index = find_best_cluster_ncp(record, clusters)
+            index = find_best_cluster_iloss(record, clusters)
             clusters[index].add_record(record)
     return clusters
 
@@ -451,6 +456,7 @@ def clustering_based_k_anon(att_trees, data, type_alg='knn', k=10, QI_num=-1):
         print "Begin to K-Member Cluster based on NCP"
         clusters = clustering_kmember(data, k)
     elif type_alg == 'oka':
+        print "Begin to OKA Cluster based on NCP"
         clusters = clustering_oka(data, k)
     else:
         print "Please choose merge algorithm types"
