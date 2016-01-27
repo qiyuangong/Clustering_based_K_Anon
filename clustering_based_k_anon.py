@@ -21,7 +21,7 @@ LEN_DATA = 0
 QI_LEN = 0
 QI_RANGE = []
 IS_CAT = []
-# get_LCA, middle and NCP require huge running time, while most of the function are duplicate
+# get_LCA, gen_result and NCP require huge running time, while most of the function are duplicate
 # we can use cache to reduce the running time
 LCA_CACHE = []
 NCP_CACHE = {}
@@ -30,31 +30,51 @@ NCP_CACHE = {}
 class Cluster(object):
 
     """Cluster is for cluster based k-anonymity
-    middle denote generlized value for one cluster
     self.member: record list in cluster
-    self.middle: middle node in cluster
+    self.gen_result: generlized value for one cluster
     """
 
-    def __init__(self, member, middle, information_loss=0.0):
+    def __init__(self, member, gen_result, information_loss=0.0):
         self.information_loss = information_loss
         self.member = member
-        self.middle = middle[:]
+        self.gen_result = gen_result[:]
+        self.center = gen_result[:]
+        for i in range(QI_LEN):
+            if IS_CAT[i] is False:
+                self.center[i] = str(sum([float(t[i]) for t in self.member]) * 1.0 / len(self.member))
 
     def add_record(self, record):
         """
         add record to cluster
         """
         self.member.append(record)
-        self.update_middle(record)
+        self.update_gen_result(record, record)
 
-    def update_middle(self, merge_middle):
+    def update_cluster(self):
+        """update cluster information when member is changed
         """
-        update middle and information_loss after adding record or merging cluster
-        :param merge_middle:
+        self.gen_result = cluster_generalization(self.member)
+        for i in range(QI_LEN):
+            if IS_CAT[i]:
+                self.center[i] = self.gen_result[i]
+            else:
+                self.center[i] = str(sum([float(t[i]) for t in self.member]) * 1.0 / len(self.member))
+        self.information_loss = len(self.member) * NCP(self.gen_result)
+
+    def update_gen_result(self, merge_gen_result, center, num=1):
+        """
+        update gen_result and information_loss after adding record or merging cluster
+        :param merge_gen_result:
         :return:
         """
-        self.middle = middle(self.middle, merge_middle)
-        self.information_loss = len(self.member) * NCP(self.middle)
+        self.gen_result = generalization(self.gen_result, merge_gen_result)
+        current_len = len(self.member)
+        for i in range(QI_LEN):
+            if IS_CAT[i]:
+                self.center[i] = self.gen_result[i]
+            else:
+                self.center[i] = str((float(self.center[i]) * (current_len - num) + float(center[i]) * num) / current_len)
+        self.information_loss = len(self.member) * NCP(self.gen_result)
 
     def add_same_record(self, record):
         """
@@ -64,23 +84,17 @@ class Cluster(object):
 
     def merge_cluster(self, cluster):
         """merge cluster into self and do not delete cluster elements.
-        update self.middle with middle
+        update self.gen_result
         """
         self.member.extend(cluster.member)
-        self.update_middle(cluster.middle)
-
-    def update_cluster(self):
-        """update cluster information when member is changed
-        """
-        self.middle = middle_for_cluster(self.member)
-        self.information_loss = len(self.member) * NCP(self.middle)
+        self.update_gen_result(cluster.gen_result, cluster.center, len(cluster))
 
     def __getitem__(self, item):
         """
         :param item: index number
-        :return: middle[item]
+        :return: gen_result[item]
         """
-        return self.middle[item]
+        return self.gen_result[item]
 
     def __len__(self):
         """
@@ -97,23 +111,23 @@ def r_distance(source, target):
     If source or target are cluster, func need to multiply
     source_len (or target_len).
     """
-    source_mid = source
-    target_mid = target
+    source_gen = source
+    target_gen = target
     source_len = 1
     target_len = 1
     # check if target is Cluster
     if isinstance(target, Cluster):
-        target_mid = target.middle
+        target_gen = target.gen_result
         target_len = len(target)
     # check if souce is Cluster
     if isinstance(source, Cluster):
-        source_mid = source.middle
+        source_gen = source.gen_result
         source_len = len(source)
-    if source_mid == target_mid:
+    if source_gen == target_gen:
         return 0
-    mid = middle(source_mid, target_mid)
+    gen = generalization(source_gen, target_gen)
     # len should be taken into account
-    distance = (source_len + target_len) * NCP(mid)
+    distance = (source_len + target_len) * NCP(gen)
     return distance
 
 
@@ -121,17 +135,17 @@ def diff_distance(record, cluster):
     """
     Return IL(cluster and record) - IL(cluster).
     """
-    mid_after = middle(record, cluster.middle)
-    return NCP(mid_after) * (len(cluster) + 1) - cluster.information_loss
+    gen_after = generalization(record, cluster.gen_result)
+    return NCP(gen_after) * (len(cluster) + 1) - cluster.information_loss
 
 
-def NCP(mid):
+def NCP(record):
     """Compute NCP (Normalized Certainty Penalty)
-    when generate record to middle.
+    when generate record to gen_result.
     """
     ncp = 0.0
     # exclude SA values(last one type [])
-    list_key = list_to_str(mid)
+    list_key = list_to_str(record)
     try:
         return NCP_CACHE[list_key]
     except KeyError:
@@ -141,12 +155,12 @@ def NCP(mid):
         width = 0.0
         if IS_CAT[i] is False:
             try:
-                float(mid[i])
+                float(record[i])
             except ValueError:
-                temp = mid[i].split(',')
+                temp = record[i].split(',')
                 width = float(temp[1]) - float(temp[0])
         else:
-            width = len(ATT_TREES[i][mid[i]]) * 1.0
+            width = len(ATT_TREES[i][record[i]]) * 1.0
         width /= QI_RANGE[i]
         ncp += width
     NCP_CACHE[list_key] = ncp
@@ -178,11 +192,11 @@ def get_LCA(index, item1, item2):
     return last_LCA.value
 
 
-def middle(record1, record2):
+def generalization(record1, record2):
     """
     Compute relational generalization result of record1 and record2
     """
-    mid = []
+    gen = []
     for i in range(QI_LEN):
         if IS_CAT[i] is False:
             split_number = []
@@ -190,25 +204,25 @@ def middle(record1, record2):
             split_number.extend(get_num_list_from_str(record2[i]))
             split_number = list(set(split_number))
             if len(split_number) == 1:
-                mid.append(split_number[0])
+                gen.append(split_number[0])
             else:
                 split_number.sort(cmp=cmp_str)
-                mid.append(split_number[0] + ',' + split_number[-1])
+                gen.append(split_number[0] + ',' + split_number[-1])
         else:
-            mid.append(get_LCA(i, record1[i], record2[i]))
-    return mid
+            gen.append(get_LCA(i, record1[i], record2[i]))
+    return gen
 
 
-def middle_for_cluster(records):
+def cluster_generalization(records):
     """
-    calculat middle of records(list) recursively.
-    Compute both relational middle for records (list).
+    calculat gen_result of records(list) recursively.
+    Compute both relational gen_result for records (list).
     """
     len_r = len(records)
-    mid = records[0]
+    gen = records[0]
     for i in range(1, len_r):
-        mid = middle(mid, records[i])
-    return mid
+        gen = generalization(gen, records[i])
+    return gen
 
 
 def find_best_knn(index, k, data):
@@ -226,8 +240,8 @@ def find_best_knn(index, k, data):
     knn.append((index, 0))
     record_index = [t[0] for t in knn]
     elements = [data[t[0]] for t in knn]
-    mid = middle_for_cluster(elements)
-    cluster = Cluster(elements, mid, k * NCP(mid))
+    gen = cluster_generalization(elements)
+    cluster = Cluster(elements, gen, k * NCP(gen))
     # delete multiple elements from data according to knn index list
     return cluster, record_index
 
@@ -238,7 +252,7 @@ def find_best_cluster_ncp(record, clusters):
     min_index = 0
     best_cluster = clusters[0]
     for i, t in enumerate(clusters):
-        distance = r_distance(record, t.middle)
+        distance = r_distance(record, t.gen_result)
         if distance < min_distance:
             min_distance = distance
             min_index = i
@@ -290,7 +304,7 @@ def find_best_record_iloss_increase(cluster, data):
     for index, record in enumerate(data):
         # IF_diff = diff_distance(record, cluster)
         # IL(cluster and record) and |cluster| + 1 is a constant
-        # so IL(record, cluster.middle) is enough
+        # so IL(record, cluster.gen_result) is enough
         IF_diff = diff_distance(record, cluster)
         if IF_diff < min_diff:
             min_diff = IF_diff
@@ -344,11 +358,11 @@ def clustering_kmember(data, k=25):
 
 
 def adjust_cluster(cluster, residual, k):
-    mid = cluster.middle
+    center = cluster.center
     dist_dict = {}
     # add random seed to cluster
     for i, t in enumerate(cluster.member):
-        dist = r_distance(mid, t)
+        dist = r_distance(center, t)
         dist_dict[i] = dist
     sorted_dict = sorted(dist_dict.iteritems(), key=operator.itemgetter(1))
     need_adjust_index = [t[0] for t in sorted_dict[k:]]
@@ -357,7 +371,6 @@ def adjust_cluster(cluster, residual, k):
     # update cluster
     cluster.member = [t for i, t in enumerate(cluster.member)
                       if i not in set(need_adjust_index)]
-
     cluster.update_cluster()
 
 
@@ -446,11 +459,10 @@ def clustering_based_k_anon(att_trees, data, type_alg='knn', k=10, QI_num=-1):
     rtime = float(time.time() - start_time)
     ncp = 0.0
     for cluster in clusters:
-        gen_result = []
-        mid = cluster.middle
+        final_result = []
         for i in range(len(cluster)):
-            gen_result.append(mid + [cluster.member[i][-1]])
-        result.extend(gen_result)
+            final_result.append(cluster.gen_result + [cluster.member[i][-1]])
+        result.extend(final_result)
         ncp += cluster.information_loss
     ncp /= LEN_DATA
     ncp /= QI_LEN
