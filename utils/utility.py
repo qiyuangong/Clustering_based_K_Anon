@@ -16,6 +16,15 @@ def cmp_str(element1, element2):
         return cmp(element1, element2)
 
 
+def qid_to_key(value_list, sep=';'):
+    """convert qid list to str key
+    value (splited by sep). This fuction is value safe, which means
+    value_list will not be changed.
+    return str list.
+    """
+    return sep.join(value_list)
+
+
 def list_to_str(value_list, cmpfun=cmp, sep=';'):
     """covert sorted str list (sorted by cmpfun) to str
     value (splited by sep). This fuction is value safe, which means

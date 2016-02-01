@@ -6,7 +6,7 @@ main module for cluster_based_k_anon
 
 from models.numrange import NumRange
 from models.gentree import GenTree
-from utils.utility import get_num_list_from_str, cmp_str, list_to_str
+from utils.utility import get_num_list_from_str, cmp_str, qid_to_key
 import random
 import time
 import operator
@@ -148,7 +148,7 @@ def NCP(record):
     """
     ncp = 0.0
     # exclude SA values(last one type [])
-    list_key = list_to_str(record)
+    list_key = qid_to_key(record)
     try:
         return NCP_CACHE[list_key]
     except KeyError:
