@@ -21,11 +21,22 @@ DEFAULT_K = 10
 __DEBUG = True
 
 
+def write_to_file(result):
+    """
+    write the anonymized result to anonymized.data
+    """
+    with open("data/anonymized.data", "w") as output:
+        for r in result:
+            output.write(';'.join(r) + '\n')
+
+
 def get_result_one(att_trees, data, type_alg, k=DEFAULT_K):
     "run clustering_based_k_anon for one time, with k=10"
     print "K=%d" % k
     data_back = copy.deepcopy(data)
-    _, eval_result = clustering_based_k_anon(att_trees, data, type_alg, k)
+    result, eval_result = clustering_based_k_anon(att_trees, data, type_alg, k)
+    write_to_file(result)
+    data = copy.deepcopy(data_back)
     print "NCP %0.2f" % eval_result[0] + "%"
     print "Running time %0.2f" % eval_result[1] + "seconds"
 
@@ -95,11 +106,11 @@ def get_result_dataset(att_trees, data, type_alg, k=DEFAULT_K, n=10):
         print "size of dataset %d" % pos
         for j in range(n):
             temp = random.sample(data, pos)
-            result, eval_result = clustering_based_k_anon(att_trees, temp, type_alg, k)
+            _, eval_result = clustering_based_k_anon(att_trees,
+                                                     temp, type_alg, k)
             ncp += eval_result[0]
             rtime += eval_result[1]
             data = copy.deepcopy(data_back)
-            # save_to_file((att_trees, temp, result, k, L))
         ncp /= n
         rtime /= n
         print "Average NCP %0.2f" % ncp + "%"
@@ -122,7 +133,8 @@ def get_result_qi(att_trees, data, type_alg, k=DEFAULT_K):
     for i in range(1, ls):
         print '#' * 30
         print "Number of QI=%d" % i
-        _, eval_result = clustering_based_k_anon(att_trees, data, type_alg, k, i)
+        _, eval_result = clustering_based_k_anon(att_trees,
+                                                 data, type_alg, k, i)
         data = copy.deepcopy(data_back)
         print "NCP %0.2f" % eval_result[0] + "%"
         all_ncp.append(round(eval_result[0], 2))

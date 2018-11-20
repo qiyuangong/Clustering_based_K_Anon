@@ -1,7 +1,7 @@
 Clustering Based k-Anonymization
 ===========================
 
-This repository is an **open source python implementation for Clustering based k-Anonymization**. I implement this algorithm in python for further study.
+This repository is an **open source python implementation for Clustering based k-Anonymization**. I implement these algorithms (k-nearest neighbor, k-member[1] and OKA[2]) in python for further study.
 
 ### Motivation 
 Researches on data privacy have lasted for more than ten years, lots of great papers have been published. However, only a few open source projects are available on Internet [3-4], most open source projects are using algorithms proposed before 2004! Fewer projects have been used in real life. Worse more, most people even don't hear about it. Such a tragedy! 
@@ -33,9 +33,9 @@ Parameters:
 
 
 ### For more information:
-[1] K. LeFevre, D. J. DeWitt, R. Ramakrishnan. Mondrian Multidimensional K-Anonymity ICDE '06: Proceedings of the 22nd International Conference on Data Engineering, IEEE Computer Society, 2006, 25
+[1] Lin J.L, Wei M.C. An efficient clustering method for k-anonymization[C], In Proceedings of the 2008 international workshop on Privacy and anonymity in information society(PAIS), 2008.
 
-[2] K. LeFevre, D. J. DeWitt, R. Ramakrishnan. Workload-aware Anonymization. Proceedings of the 12th ACM SIGKDD International Conference on Knowledge Discovery and Data Mining, ACM, 2006, 277-286
+[2] Byun J.W, Kamra A, Bertino E, et al. Efficient k-anonymization using clustering techniques[C], In Proceedings of the 12th international conference on Database systems for advanced applications(DASFAA), 2007.
 
 [3] [UTD Anonymization Toolbox](http://cs.utdallas.edu/dspl/cgi-bin/toolbox/index.php?go=home)
 
