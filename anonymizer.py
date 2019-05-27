@@ -21,13 +21,22 @@ DEFAULT_K = 10
 __DEBUG = True
 
 
+def extend_result(val):
+    """
+    separated with ',' if it is a list
+    """
+    if isinstance(val, list):
+        return ','.join(val)
+    return val
+
+
 def write_to_file(result):
     """
     write the anonymized result to anonymized.data
     """
     with open("data/anonymized.data", "w") as output:
         for r in result:
-            output.write(';'.join(r) + '\n')
+            output.write(';'.join(map(extend_result, r)) + '\n')
 
 
 def get_result_one(att_trees, data, type_alg, k=DEFAULT_K):
